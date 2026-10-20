@@ -1,0 +1,20 @@
+# 运行时产生的，都不进仓库
+.dsh-home/
+attachments/
+logs/
+state/
+memory/daily/
+node_modules/
+_patch/
+_probe/
+_share/
+*.bak
+*.bak-*
+*.log
+
+# 配置里有本机路径和端口，不要提交
+config.json
+
+# 凭据
+.credentials.yaml
+.env

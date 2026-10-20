@@ -1,0 +1,75 @@
+{
+  "dshBin": "",
+  "dshHome": ".dsh-home",
+  "cwd": ".",
+  "session": {
+    "dailyReset": true,
+    "timeZone": "Asia/Shanghai"
+  },
+  "reply": {
+    "maxChars": 1800,
+    "gapMs": 900,
+    "typing": true,
+    "typingRefreshMs": 5000,
+    "timeoutMs": 180000,
+    "maxBubbles": 2,
+    "bubbleGapMs": 700,
+    "errorText": "咕嘟咕嘟……刚才算晕了，你再说一遍好不好。",
+    "emptyText": "唔……刚才走神了，你再说一次？",
+    "unsupportedText": "只看得懂文字哦，图片和文件先饶了我吧。"
+  },
+  "log": {
+    "keepDays": 30
+  },
+  "memory": {
+    "maxDailiesInPrompt": 5,
+    "maxDailiesInMemory": 5,
+    "maxFacts": 40,
+    "maxFactsInMemory": 12,
+    "maxJokes": 40,
+    "maxJokesInMemory": 10,
+    "maxMemoryChars": 1600,
+    "maxNoteChars": 400,
+    "maxFactChars": 60,
+    "maxJokeChars": 80,
+    "affinityInit": 50,
+    "affinityDeltaCap": 5,
+    "timeoutMs": 180000
+  },
+  "admin": {
+    "host": "127.0.0.1",
+    "port": 8787
+  },
+  "api": {
+    "baseUrl": ""
+  },
+  "sticker": {
+    "enabled": true,
+    "dir": "stickers",
+    "maxPerHour": 12,
+    "gapMs": 500,
+    "maxTextChars": 200
+  },
+  "bili": {
+    "enabled": false,
+    "outDir": "",
+    "maxPerPush": 3,
+    "maxPerTick": 1,
+    "withCover": false,
+    "pushAt": "",
+    "linkStyle": "url",
+    "idleMinutes": 20,
+    "minDelayMin": 15,
+    "maxDelayMin": 240,
+    "gapMin": 20,
+    "sleepFrom": "23:30",
+    "sleepTo": "09:00",
+    "bubbleGapMs": 3000,
+    "keepKeys": 50
+  },
+  "guard": {
+    "dailyTokenBudget": 300000,
+    "pauseWhenExceeded": false
+  },
+  "allowUsers": []
+}

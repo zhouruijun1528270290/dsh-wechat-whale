@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小鲸鱼 · 管理台</title>
+<style>
+  :root{
+    --bg:#0d1520; --bg2:#121e2c; --card:#16283a; --line:#22405c; --ink:#dceaf7; --dim:#7f9ab3;
+    --acc:#4fc3f7; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --whale:#7dd3fc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0b1220,#0d1520 40%);color:var(--ink);
+       font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+  a{color:var(--acc)}
+  header{display:flex;align-items:center;gap:14px;padding:14px 20px;background:var(--bg2);
+         border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+  header h1{margin:0;font-size:17px;font-weight:600}
+  header h1 small{color:var(--dim);font-weight:400;font-size:12px;margin-left:6px}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;
+        border:1px solid var(--line);background:#0e1b28;font-size:12px;color:var(--dim)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+  .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)} .dot.off{background:var(--bad)}
+  .dot.pause{background:var(--warn)}
+  nav{display:flex;gap:2px;padding:0 14px;background:var(--bg2);border-bottom:1px solid var(--line);
+      position:sticky;top:57px;z-index:5;overflow-x:auto}
+  nav button{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);
+             padding:10px 16px;font:inherit;cursor:pointer;white-space:nowrap}
+  nav button:hover{color:var(--ink)}
+  nav button.sel{color:var(--whale);border-bottom-color:var(--whale)}
+  main{padding:18px 20px 60px;max-width:1180px;margin:0 auto}
+  .page{display:none} .page.sel{display:block}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .card h3{margin:0 0 8px;font-size:12px;color:var(--dim);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:2px 0;font-size:13px}
+  .kv b{font-weight:500;color:var(--dim)}
+  .kv span{text-align:right;word-break:break-all;font-variant-numeric:tabular-nums}
+  .big{font-size:26px;font-weight:600;color:var(--whale);font-variant-numeric:tabular-nums}
+  .bar{height:8px;border-radius:4px;background:#0b1723;overflow:hidden;margin-top:8px;border:1px solid var(--line)}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--ok));width:0}
+  .bar.warn i{background:linear-gradient(90deg,var(--warn),var(--bad))}
+  button.btn{background:#1b3550;border:1px solid var(--line);color:var(--ink);padding:7px 14px;
+             border-radius:7px;cursor:pointer;font:inherit}
+  button.btn:hover{background:#22435f;border-color:var(--acc)}
+  button.btn:disabled{opacity:.45;cursor:not-allowed}
+  button.btn.bad{background:#3a1b1b;border-color:#5c2222} button.btn.bad:hover{background:#4d2222}
+  button.btn.warn{background:#3a301b;border-color:#5c4a22}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0}
+  textarea{width:100%;min-height:340px;background:#0b1723;color:var(--ink);border:1px solid var(--line);
+           border-radius:8px;padding:10px;font:12.5px/1.55 Consolas,"Cascadia Mono",monospace;resize:vertical}
+  textarea.sm{min-height:150px}
+  input[type=text],input[type=number],input[type=date],select{background:#0b1723;color:var(--ink);
+    border:1px solid var(--line);border-radius:7px;padding:6px 9px;font:inherit}
+  .hint{color:var(--dim);font-size:12px;margin:6px 0}
+  .warnbox{border-left:3px solid var(--warn);background:#241f10;padding:8px 12px;border-radius:6px;
+           color:#f5dfa8;font-size:12.5px;margin:10px 0}
+  .turn{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+  .turn .u{color:#cfe8ff} .turn .b{color:#a9f0c9;margin-top:6px}
+  .turn .t{color:var(--dim);font-size:11.5px;margin-bottom:4px}
+  .turn .who{display:inline-block;min-width:52px;color:var(--dim);font-size:12px}
+  pre.log{background:#0b1723;border:1px solid var(--line);border-radius:8px;padding:10px;
+          max-height:62vh;overflow:auto;font:12px/1.5 Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+  .toast{position:fixed;right:18px;bottom:18px;background:#16324a;border:1px solid var(--acc);
+         color:var(--ink);padding:10px 16px;border-radius:8px;opacity:0;transition:.25s;pointer-events:none;
+         max-width:min(520px,90vw)}
+  .toast.on{opacity:1}
+  .toast.err{border-color:var(--bad);background:#3a1b1b}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)}
+  th{color:var(--dim);font-weight:600}
+  .flex{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .flex>div{display:flex;flex-direction:column;gap:4px}
+  .flex label{font-size:12px;color:var(--dim)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🐋 小鲸鱼<small>微信机器人 · 本机管理台</small></h1>
+  <span class="pill"><i class="dot" id="d-on"></i><span id="p-on">连接中…</span></span>
+  <span class="pill" id="p-up">–</span>
+  <span class="pill" id="p-sess">–</span>
+  <span class="pill" id="p-port">–</span>
+</header>
+<nav>
+  <button data-p="status" class="sel">状态</button>
+  <button data-p="chat">对话</button>
+  <button data-p="config">配置</button>
+  <button data-p="apikey">密钥</button>
+  <button data-p="memory">记忆</button>
+  <button data-p="logs">日志</button>
+</nav>
+<main>
+
+<!-- ============================ 状态 ============================ -->
+<section class="page sel" id="page-status">
+  <div class="grid">
+    <div class="card"><h3>微信绑定</h3>
+      <div class="kv"><b>状态</b><span id="s-online">–</span></div>
+      <div class="kv"><b>bot</b><span id="s-bot">–</span></div>
+      <div class="kv"><b>对方</b><span id="s-owner">–</span></div>
+      <div class="kv"><b>token</b><span id="s-token">–</span></div>
+    </div>
+    <div class="card"><h3>今天的会话</h3>
+      <div class="kv"><b>日期</b><span id="s-date">–</span></div>
+      <div class="kv"><b>sessionId</b><span id="s-sid">–</span></div>
+      <div class="kv"><b>轮数</b><span id="s-turns">–</span></div>
+      <div class="kv"><b>队列</b><span id="s-queue">–</span></div>
+    </div>
+    <div class="card"><h3>计数</h3>
+      <div class="kv"><b>收到</b><span id="s-recv">–</span></div>
+      <div class="kv"><b>回复</b><span id="s-rep">–</span></div>
+      <div class="kv"><b>失败</b><span id="s-fail">–</span></div>
+      <div class="kv"><b>看不懂</b><span id="s-unsup">–</span></div>
+    </div>
+    <div class="card"><h3>今日 token 用量</h3>
+      <div class="big" id="s-tok">–</div>
+      <div class="hint" id="s-tokd">–</div>
+      <div class="bar" id="s-barbar"><i id="s-bar"></i></div>
+    </div>
+    <div class="card"><h3>好感度</h3>
+      <div class="big" id="s-aff">–</div>
+      <div class="hint" id="s-affl">–</div>
+    </div>
+    <div class="card"><h3>记忆规模</h3>
+      <div class="kv"><b>长期事实</b><span id="s-facts">–</span></div>
+      <div class="kv"><b>日记天数</b><span id="s-dailies">–</span></div>
+      <div class="kv"><b>记忆段字数</b><span id="s-mem">–</span></div>
+    </div>
+    <div class="card"><h3>运行</h3>
+      <div class="kv"><b>pid</b><span id="s-pid">–</span></div>
+      <div class="kv"><b>已运行</b><span id="s-uptime">–</span></div>
+      <div class="kv"><b>启动于</b><span id="s-started">–</span></div>
+    </div>
+    <div class="card"><h3>最近一轮</h3>
+      <div class="kv"><b>对方说</b><span id="s-lin">–</span></div>
+      <div class="kv"><b>本鲸鱼回</b><span id="s-lrep">–</span></div>
+    </div>
+    <div class="card"><h3>最近错误</h3>
+      <div id="s-err" class="hint">–</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="btn" id="a-pause">暂停回复</button>
+    <button class="btn" id="a-new">新建会话</button>
+    <button class="btn" id="a-distill">立即蒸馏今天</button>
+    <button class="btn" id="a-rebuild">重建记忆段</button>
+    <a class="btn" style="text-decoration:none" href="/qr" target="_blank">二维码页</a>
+    <button class="btn warn" id="a-restart">保存型重启</button>
+    <button class="btn bad" id="a-quit">停止机器人</button>
+  </div>
+  <div class="hint">「保存型重启」= 让 bridge 以退出码 42 退出，start.cmd 的守护循环把它拉起来（约 3 秒）。改完 config.json 会自动走这一步。</div>
+</section>
+
+<!-- ============================ 对话 ============================ -->
+<section class="page" id="page-chat">
+  <div class="row">
+    <div class="flex"><div><label>日期</label><input type="date" id="c-date"></div></div>
+    <button class="btn" id="c-load">加载</button>
+    <button class="btn" id="c-today">今天</button>
+    <span class="hint" id="c-info"></span>
+  </div>
+  <div id="c-list"></div>
+</section>
+
+<!-- ============================ 配置 ============================ -->
+<section class="page" id="page-config">
+  <div class="warnbox">改完点「保存并重启」：会先备份成 <code>state\config.bak-*.json</code>，再写 <code>config.json</code>，
+    然后 bridge 以退出码 42 退出让 start.cmd 拉起（约 3 秒）。写的是 Node 的 UTF-8，**不带 BOM**。</div>
+  <div class="row">
+    <button class="btn" id="f-reload">重新载入</button>
+    <button class="btn" id="f-save">保存并重启</button>
+    <span class="hint" id="f-info"></span>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <h3>快捷修改（改完点「写进下面的 JSON」）</h3>
+    <div class="flex">
+      <div><label>回复字数上限</label><input type="number" id="q-maxchars" style="width:110px"></div>
+      <div><label>分片间隔 ms</label><input type="number" id="q-gap" style="width:110px"></div>
+      <div><label>正在输入刷新 ms</label><input type="number" id="q-typing" style="width:120px"></div>
+      <div><label>正在输入</label><select id="q-typingon"><option value="true">开</option><option value="false">关</option></select></div>
+      <div><label>回复超时 ms</label><input type="number" id="q-timeout" style="width:120px"></div>
+      <div><label>每日 token 预算</label><input type="number" id="q-budget" style="width:130px"></div>
+      <div><label>管理台端口</label><input type="number" id="q-port" style="width:110px"></div>
+      <div><label>时区</label><input type="text" id="q-tz" style="width:150px"></div>
+      <button class="btn" id="q-apply">写进下面的 JSON</button>
+    </div>
+  </div>
+  <textarea id="f-text" spellcheck="false"></textarea>
+</section>
+
+<!-- ============================ API 密钥 ============================ -->
+<section class="page" id="page-apikey">
+  <div class="warnbox" id="k-warn" style="display:none"></div>
+
+  <div class="grid">
+    <div class="card"><h3>当前密钥</h3>
+      <div class="big" id="k-masked" style="font-family:Consolas,monospace;font-size:15px">–</div>
+      <div class="hint" id="k-src">–</div>
+      <div class="kv"><b>凭据文件</b><span id="k-file" style="font-size:11px;word-break:break-all">–</span></div>
+      <div class="kv"><b>改动时间</b><span id="k-mtime">–</span></div>
+      <div class="kv"><b>备份</b><span id="k-backup">–</span></div>
+    </div>
+    <div class="card"><h3>换一把密钥</h3>
+      <div class="flex" style="align-items:stretch">
+        <div style="flex:1;min-width:260px">
+          <label>新密钥（直接粘贴；保存后<b>下一条消息就生效</b>，不用重启）</label>
+          <input type="password" id="k-key" spellcheck="false" autocomplete="off" placeholder="sk-…" style="width:100%">
+        </div>
+      </div>
+      <div class="row" style="margin:10px 0 0">
+        <button class="btn" id="k-show">显示</button>
+        <button class="btn" id="k-save">保存</button>
+        <button class="btn" id="k-test" title="真跑一次最小 headless 验证密钥能用（约 2 秒、约 1.5k token）">测试</button>
+      </div>
+      <div class="row" style="margin:8px 0 0">
+        <button class="btn warn" id="k-clear">清除（改用环境里的）</button>
+        <button class="btn" id="k-restore" title="把真正的 ~/.dsh 里那把复制过来（只读，不动它）">恢复成 ~/.dsh 的</button>
+      </div>
+      <div class="hint" id="k-note" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>接口地址（baseURL） <span class="hint" style="text-transform:none">留空 = DeepSeek 官方</span></h3>
+    <div class="flex">
+      <div style="flex:1;min-width:340px">
+        <label>第三方中转/自建端点要填<b>完整</b>地址（官方默认是 <code id="k-pub"></code>）</label>
+        <input type="text" id="k-base" spellcheck="false" placeholder="https://api.deepseek.com/anthropic" style="width:100%">
+      </div>
+      <button class="btn" id="k-basesave">保存并重启</button>
+    </div>
+    <div class="hint" style="margin-top:8px">
+      改这一项要重启（约 3 秒），因为它写在 <code>config.json</code> 里、bridge 只在启动时读一次；
+      密钥不用重启。注意这个端点要能和机器人现在用的模型对上，填错了密钥再好也调不通 —— 改完点一次「测试」最稳。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>它是怎么生效的</h3>
+    <div class="hint">
+      密钥写在隔离 home 的凭据文件 <code><项目目录>\.dsh-home\.credentials.yaml</code> 的 <code>refs.DEEPSEEK_API_KEY</code> ——
+      和 DSH 网页版「模型」页写的是同一个位置。<b>绝不碰真的 <code>~/.dsh</code></b>。<br>
+      DSH 读凭据的优先级是：<b>启动环境变量（只读） &gt; 这个文件 &gt; .env</b>。
+      所以只要文件里有密钥，bridge 就会把继承来的 <code>DEEPSEEK_API_KEY</code> 从模型子进程的环境里删掉，
+      保证「这里填的那把」永远说话算数；文件里没有时才让环境变量顶上来。<br>
+      每条微信消息都会起一个<b>全新</b>的 headless 进程，它启动时重新读这个文件 —— 这就是「改完下一条就生效」的原因。
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 记忆 ============================ -->
+<section class="page" id="page-memory">
+  <div class="grid">
+    <div class="card"><h3>好感度</h3>
+      <div class="big" id="m-aff">–</div>
+      <div class="hint" id="m-affl">–</div>
+      <div class="row" style="margin:10px 0 0">
+        <div class="flex"><div><label>基准值（0–100）</label><input type="number" id="m-base" style="width:110px"></div></div>
+        <button class="btn" id="m-basesave">保存基准</button>
+      </div>
+    </div>
+    <div class="card"><h3>好感度台账（最近）</h3>
+      <div style="max-height:220px;overflow:auto"><table id="m-hist"><tr><th>日期</th><th>变化</th><th>原因</th></tr></table></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="btn" id="m-distill">立即蒸馏今天</button>
+    <button class="btn" id="m-rebuild">重建记忆段</button>
+    <span class="hint" id="m-info"></span>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <h3>记忆段（机器人下次会话自动读到的，只读预览）</h3>
+    <pre class="log" id="m-block" style="max-height:280px"></pre>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <h3>长期事实 <span class="hint" style="text-transform:none">memory\long-term.md —— 每行一条「- [日期] 事实」</span></h3>
+    <textarea id="m-longterm" spellcheck="false"></textarea>
+    <div class="row"><button class="btn" id="m-ltsave">保存长期事实</button></div>
+  </div>
+
+  <div class="card">
+    <h3>某一天的日记</h3>
+    <div class="row">
+      <select id="m-day"></select>
+      <button class="btn" id="m-dayload">载入</button>
+      <button class="btn bad" id="m-dayclear">清空这一天</button>
+    </div>
+    <textarea id="m-daily" spellcheck="false"></textarea>
+    <div class="row"><button class="btn" id="m-daysave">保存这一天</button></div>
+  </div>
+</section>
+
+<!-- ============================ 日志 ============================ -->
+<section class="page" id="page-logs">
+  <div class="row">
+    <select id="l-file" style="min-width:240px"></select>
+    <div class="flex"><div><label>尾部行数</label><input type="number" id="l-tail" value="300" style="width:100px"></div></div>
+    <button class="btn" id="l-load">刷新</button>
+    <label class="pill"><input type="checkbox" id="l-auto"> 每 2 秒自动刷新</label>
+  </div>
+  <pre class="log" id="l-out">（选一个文件）</pre>
+</section>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtN = (n) => Number(n ?? 0).toLocaleString('zh-CN');
+const fmtTime = (iso) => { try { return new Date(iso).toLocaleString('zh-CN', { hour12: false }) } catch { return iso ?? '' } };
+const fmtDur = (s) => { s = Math.max(0, Math.floor(s || 0)); const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return (d ? d + ' 天 ' : '') + (h ? h + ' 小时 ' : '') + m + ' 分' };
+
+let toastTimer = null;
+function toast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg; t.className = 'toast on' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = 'toast' }, 4000);
+}
+
+async function api(path, opts) {
+  const r = await fetch(path, Object.assign({ headers: { 'content-type': 'application/json' } }, opts || {}));
+  let body;
+  const txt = await r.text();
+  try { body = JSON.parse(txt) } catch { body = { ok: r.ok, raw: txt } }
+  if (!r.ok || body.ok === false) throw new Error(body.error || ('HTTP ' + r.status));
+  return body;
+}
+
+// ------------------------------------------------------------------ 页签
+document.querySelectorAll('nav button').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('sel', x === b));
+  document.querySelectorAll('.page').forEach((p) => p.classList.toggle('sel', p.id === 'page-' + b.dataset.p));
+  if (b.dataset.p === 'logs') loadLogFiles();
+  if (b.dataset.p === 'memory') loadMemory();
+  if (b.dataset.p === 'config') loadConfig();
+  if (b.dataset.p === 'apikey') loadApiKey();
+  if (b.dataset.p === 'chat') loadChat();
+});
+
+// ------------------------------------------------------------------ 状态
+let paused = false;
+async function loadStatus() {
+  try {
+    const s = await api('/api/status');
+    const b = s.bridge || {};
+    paused = !!s.paused;
+    $('d-on').className = 'dot ' + (!b.online ? 'off' : paused ? 'pause' : 'on');
+    $('p-on').textContent = !b.online ? '离线 / 未登录' : paused ? '在线 · 已暂停' : '在线 · 收消息中';
+    $('p-up').textContent = '运行 ' + fmtDur(s.uptimeSec);
+    $('p-sess').textContent = (b.sessionDate || '–') + ' · ' + (b.sessionTurns ?? 0) + ' 轮';
+    $('p-port').textContent = s.admin.host + ':' + s.admin.port + (s.admin.standalone ? '（只读）' : '');
+    $('s-online').textContent = b.online ? '已登录' : '未登录';
+    $('s-bot').textContent = b.botId || '–';
+    $('s-owner').textContent = b.ownerUserId || '–';
+    $('s-token').textContent = b.token || '–';
+    $('s-date').textContent = b.sessionDate || '–';
+    $('s-sid').textContent = b.sessionId || '（下次消息新建）';
+    $('s-turns').textContent = b.sessionTurns ?? 0;
+    $('s-queue').textContent = (b.queueDepth ?? 0) + (b.processing ? '（处理中）' : '');
+    const c = b.counters || {};
+    $('s-recv').textContent = fmtN(c.received); $('s-rep').textContent = fmtN(c.replied);
+    $('s-fail').textContent = fmtN(c.failed); $('s-unsup').textContent = fmtN(c.unsupported);
+    $('s-tok').textContent = fmtN(s.usage.totalTokens || 0) + ' tok';
+    $('s-tokd').textContent = `输入 ${fmtN(s.usage.inputTokens)} · 输出 ${fmtN(s.usage.outputTokens)} · 缓存命中 ${fmtN(s.usage.cacheReadTokens)} · ${s.usage.turns ?? 0} 轮`
+      + (s.budget.daily ? ` · 预算 ${fmtN(s.budget.daily)}（${s.budget.pct}%）` : ' · 未设预算');
+    $('s-bar').style.width = (s.budget.daily ? s.budget.pct : Math.min(100, (s.usage.totalTokens || 0) / 3000)) + '%';
+    $('s-barbar').className = 'bar' + (s.budget.daily && s.budget.pct >= 80 ? ' warn' : '');
+    $('s-aff').textContent = s.affinity.value; $('s-affl').textContent = s.affinity.level;
+    $('s-facts').textContent = s.memory.facts; $('s-dailies').textContent = s.memory.dailies;
+    $('s-mem').textContent = fmtN(s.memory.memoryChars);
+    $('s-pid').textContent = b.pid || '–';
+    $('s-uptime').textContent = fmtDur(s.uptimeSec);
+    $('s-started').textContent = fmtTime(b.startedAt);
+    $('s-lin').textContent = b.lastInboundText || '–';
+    $('s-lrep').textContent = b.lastReplyText || '–';
+    $('s-err').textContent = b.lastError || '（没有）';
+    $('a-pause').textContent = paused ? '恢复回复' : '暂停回复';
+    $('a-pause').className = 'btn' + (paused ? ' warn' : '');
+  } catch (e) {
+    $('d-on').className = 'dot off'; $('p-on').textContent = '管理台连不上：' + e.message;
+  }
+}
+
+async function action(name, arg) {
+  try { const r = await api('/api/action', { method: 'POST', body: JSON.stringify({ action: name, arg }) }); toast(r.note || '完成'); }
+  catch (e) { toast(e.message, true) }
+  setTimeout(loadStatus, 800);
+}
+$('a-pause').onclick = () => action(paused ? 'resume' : 'pause');
+$('a-new').onclick = () => action('new-session');
+$('a-distill').onclick = () => action('distill', '');
+$('a-rebuild').onclick = () => action('rebuild-memory');
+$('a-restart').onclick = () => { if (confirm('让 bridge 重启（约 3 秒）？')) action('restart') };
+$('a-quit').onclick = () => { if (confirm('停止机器人？start.cmd 的守护循环也会一起停下。')) action('quit') };
+
+// ------------------------------------------------------------------ 对话
+function isoToday() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+async function loadChat() {
+  const date = $('c-date').value || isoToday();
+  $('c-date').value = date;
+  try {
+    const r = await api('/api/transcript?date=' + encodeURIComponent(date));
+    $('c-info').textContent = `${date} · ${r.turns.length} 轮` + (r.pending ? ` · 有 1 条没回复：「${r.pending}」` : '');
+    if (!r.turns.length && !r.notes.length) { $('c-list').innerHTML = '<div class="hint">这一天没有对话记录。</div>'; return }
+    $('c-list').innerHTML = r.turns.map((t, i) => `<div class="turn">
+        <div class="t">#${i + 1} · ${fmtTime(t.at)}</div>
+        <div><span class="who">对方</span><span class="u">${esc(t.user)}</span></div>
+        <div><span class="who">鲸鱼</span><span class="b">${esc(t.bot)}</span></div>
+      </div>`).join('')
+      + (r.notes.length ? `<div class="card"><h3>当天事件</h3>${r.notes.map((n) => `<div class="kv"><b>${esc(n.kind)}</b><span>${esc(n.detail)}</span></div>`).join('')}</div>` : '');
+  } catch (e) { $('c-list').innerHTML = '<div class="hint">读不到：' + esc(e.message) + '</div>' }
+}
+$('c-load').onclick = loadChat;
+$('c-today').onclick = () => { $('c-date').value = isoToday(); loadChat() };
+
+// ------------------------------------------------------------------ 配置
+async function loadConfig() {
+  try {
+    const r = await api('/api/config');
+    $('f-text').value = r.text;
+    $('f-info').textContent = r.file;
+    let o = {}; try { o = JSON.parse(r.text) } catch { /* 坏 JSON 也要能显示 */ }
+    const q = (id, v) => { if (v !== undefined && v !== null) $(id).value = v };
+    q('q-maxchars', o.reply?.maxChars); q('q-gap', o.reply?.gapMs); q('q-typing', o.reply?.typingRefreshMs);
+    q('q-timeout', o.reply?.timeoutMs); q('q-budget', o.guard?.dailyTokenBudget);
+    q('q-port', o.admin?.port); q('q-tz', o.session?.timeZone);
+    if (o.reply?.typing !== undefined) $('q-typingon').value = String(!!o.reply.typing);
+  } catch (e) { toast(e.message, true) }
+}
+$('f-reload').onclick = loadConfig;
+$('q-apply').onclick = () => {
+  let o;
+  try { o = JSON.parse($('f-text').value) } catch (e) { return toast('下面不是合法 JSON：' + e.message, true) }
+  o.reply = o.reply || {}; o.admin = o.admin || {}; o.session = o.session || {}; o.guard = o.guard || {};
+  const num = (id) => { const v = $(id).value; return v === '' ? undefined : Number(v) };
+  const set = (obj, k, v) => { if (v !== undefined && Number.isFinite(v)) obj[k] = v };
+  set(o.reply, 'maxChars', num('q-maxchars')); set(o.reply, 'gapMs', num('q-gap'));
+  set(o.reply, 'typingRefreshMs', num('q-typing')); set(o.reply, 'timeoutMs', num('q-timeout'));
+  o.reply.typing = $('q-typingon').value === 'true';
+  set(o.guard, 'dailyTokenBudget', num('q-budget')); set(o.admin, 'port', num('q-port'));
+  if ($('q-tz').value.trim()) o.session.timeZone = $('q-tz').value.trim();
+  $('f-text').value = JSON.stringify(o, null, 2) + '\n';
+  toast('已写进下面的 JSON，确认无误后点「保存并重启」');
+};
+$('f-save').onclick = async () => {
+  if (!confirm('保存 config.json 并重启 bridge？')) return;
+  try { const r = await api('/api/config', { method: 'POST', body: JSON.stringify({ text: $('f-text').value }) }); toast('已保存（备份 ' + r.backup + '），正在重启…') }
+  catch (e) { toast(e.message, true) }
+};
+
+// ------------------------------------------------------------------ API 密钥
+const SOURCE_WORD = { file: '来自凭据文件（界面里填的）', env: '来自启动环境变量（只读）', none: '没配任何密钥' };
+function paintApiKey(k) {
+  $('k-masked').textContent = k.masked || '（未设置）';
+  $('k-src').textContent = SOURCE_WORD[k.source] || k.source;
+  $('k-file').textContent = k.file + (k.exists ? '' : '（还没有这个文件）');
+  $('k-mtime').textContent = k.mtime ? fmtTime(k.mtime) : '–';
+  $('k-backup').textContent = k.backup || '–';
+  $('k-base').value = k.baseUrl || '';
+  $('k-pub').textContent = k.publicBaseUrl;
+  let warn = '';
+  if (k.error) warn = '⚠️ 凭据文件有问题：' + k.error + '（DSH 可能拒绝加载它，先手工看一眼）';
+  else if (k.source === 'none') warn = '⚠️ 现在没有任何密钥可用，机器人回复会失败。在下面粘贴一把。';
+  else if (k.envShadowed) warn = 'ℹ️ 启动环境里也有 DEEPSEEK_API_KEY，但文件里的优先 —— bridge 会把环境里那份从模型子进程里删掉。';
+  else if (k.source === 'env') warn = 'ℹ️ 正在用启动环境里的密钥（只读）。在这里填一把就会写进文件，并从此以文件为准。';
+  $('k-warn').style.display = warn ? '' : 'none';
+  $('k-warn').textContent = warn;
+}
+async function loadApiKey() {
+  try { paintApiKey(await api('/api/apikey')) } catch (e) { toast(e.message, true) }
+}
+$('k-show').onclick = () => {
+  const i = $('k-key');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  $('k-show').textContent = i.type === 'password' ? '显示' : '隐藏';
+};
+$('k-save').onclick = async () => {
+  const key = $('k-key').value.trim();
+  if (!key) return toast('先粘贴一把密钥', true);
+  if (!confirm('把它写成这台机器人的密钥？\n（只写 E:\\Dsh_Auto\\.dsh-home，不碰真的 ~/.dsh）')) return;
+  try {
+    const r = await api('/api/apikey', { method: 'POST', body: JSON.stringify({ action: 'set', key }) });
+    $('k-key').value = ''; $('k-show').textContent = '显示'; $('k-key').type = 'password';
+    paintApiKey(r); $('k-note').textContent = (r.done || []).join('；');
+    toast('已保存：' + r.masked);
+  } catch (e) { toast(e.message, true) }
+};
+$('k-clear').onclick = async () => {
+  if (!confirm('清除文件里的密钥？之后会退回用启动环境里的（如果有）。')) return;
+  try {
+    const r = await api('/api/apikey', { method: 'POST', body: JSON.stringify({ action: 'clear' }) });
+    paintApiKey(r); $('k-note').textContent = (r.done || []).join('；'); toast('已清除');
+  } catch (e) { toast(e.message, true) }
+};
+$('k-restore').onclick = async () => {
+  if (!confirm('把真正的 ~/.dsh 里那把密钥复制过来？（只读它，不改它）')) return;
+  try {
+    const r = await api('/api/apikey', { method: 'POST', body: JSON.stringify({ action: 'restore' }) });
+    paintApiKey(r); $('k-note').textContent = (r.done || []).join('；'); toast('已恢复：' + r.masked);
+  } catch (e) { toast(e.message, true) }
+};
+$('k-basesave').onclick = async () => {
+  if (!confirm('保存接口地址并重启 bridge（约 3 秒）？')) return;
+  try {
+    const r = await api('/api/apikey', { method: 'POST', body: JSON.stringify({ action: 'base-url', baseUrl: $('k-base').value }) });
+    $('k-note').textContent = (r.done || []).join('；'); toast('已保存，正在重启…');
+  } catch (e) { toast(e.message, true) }
+};
+$('k-test').onclick = async () => {
+  const b = $('k-test'); b.disabled = true; const old = b.textContent; b.textContent = '测试中…';
+  $('k-note').textContent = '正在起一个全新会话验证密钥（不碰今天的对话，也不会发到微信）…';
+  try {
+    const r = await api('/api/action', { method: 'POST', body: JSON.stringify({ action: 'test-key' }) });
+    const x = r.result || {};
+    $('k-note').textContent = `${r.note}${x.text ? ' · 它回了：' + x.text : ''}`
+      + `${x.inputTokens != null ? ` · 用了 ${fmtN(x.inputTokens)} 输入 / ${fmtN(x.outputTokens)} 输出 token` : ''}`
+      + `${x.stderr ? ' · 报错：' + x.stderr : ''}`;
+    toast(r.note, x.exitCode !== 0);
+  } catch (e) { $('k-note').textContent = e.message; toast(e.message, true) }
+  finally { b.disabled = false; b.textContent = old }
+};
+
+// ------------------------------------------------------------------ 记忆
+let memState = { value: 50 };
+async function loadMemory(date) {
+  try {
+    const d = date || $('m-day').value || '';
+    const r = await api('/api/memory' + (d ? '?date=' + encodeURIComponent(d) : ''));
+    memState = r.affinity;
+    $('m-aff').textContent = r.affinity.value; $('m-affl').textContent = r.affinity.level + `（基准 ${r.affinity.base}，共 ${r.affinity.history.length} 条台账）`;
+    $('m-base').value = r.affinity.base;
+    $('m-hist').innerHTML = '<tr><th>日期</th><th>变化</th><th>原因</th></tr>' + r.affinity.history.map((h) =>
+      `<tr><td>${esc(h.date)}</td><td>${h.delta > 0 ? '+' : ''}${esc(h.delta)}</td><td>${esc(h.reason || '')}</td></tr>`).join('');
+    $('m-block').textContent = r.memoryBlock || '（读不到记忆段）';
+    $('m-longterm').value = r.longTermText;
+    $('m-info').textContent = `${r.facts.length} 条长期事实 · ${r.dailies.length} 天日记`;
+    const sel = $('m-day');
+    const cur = sel.value;
+    sel.innerHTML = r.dailies.map((x) => `<option value="${esc(x.date)}">${esc(x.date)}（${x.note ? x.note.slice(0, 18) + '…' : '无笔记'}）</option>`).join('') || '<option value="">（还没有日记）</option>';
+    if (cur && r.dailies.some((x) => x.date === cur)) sel.value = cur;
+    if (r.dailyFile.date) $('m-daily').value = r.dailyFile.text;
+  } catch (e) { toast(e.message, true) }
+}
+$('m-basesave').onclick = async () => {
+  try { const r = await api('/api/memory', { method: 'POST', body: JSON.stringify({ affinityBase: Number($('m-base').value) }) }); toast(r.done.join('；')) }
+  catch (e) { toast(e.message, true) }
+  setTimeout(loadMemory, 1200);
+};
+$('m-ltsave').onclick = async () => {
+  try { const r = await api('/api/memory', { method: 'POST', body: JSON.stringify({ longTermText: $('m-longterm').value }) }); toast(r.done.join('；')) }
+  catch (e) { toast(e.message, true) }
+  setTimeout(loadMemory, 1200);
+};
+$('m-dayload').onclick = () => loadMemory($('m-day').value);
+$('m-daysave').onclick = async () => {
+  const date = $('m-day').value;
+  if (!date) return toast('先选一天', true);
+  try { const r = await api('/api/memory', { method: 'POST', body: JSON.stringify({ dailyFile: { date, text: $('m-daily').value } }) }); toast(r.done.join('；')) }
+  catch (e) { toast(e.message, true) }
+  setTimeout(loadMemory, 1200);
+};
+$('m-dayclear').onclick = () => { const date = $('m-day').value; if (date && confirm(`清空 ${date}：删日记、删当天事实、删当天好感度条目？`)) action('clear-day', date) };
+$('m-distill').onclick = () => action('distill', '');
+$('m-rebuild').onclick = () => { action('rebuild-memory'); setTimeout(loadMemory, 1500) };
+
+// ------------------------------------------------------------------ 日志
+async function loadLogFiles() {
+  try {
+    const r = await api('/api/logs');
+    const sel = $('l-file'); const cur = sel.value;
+    sel.innerHTML = r.files.map((f) => `<option value="${esc(f.name)}">${esc(f.name)}（${(f.size / 1024).toFixed(1)} KB · ${fmtTime(f.mtime)}）</option>`).join('');
+    if (cur && r.files.some((f) => f.name === cur)) sel.value = cur;
+    else if (r.files.some((f) => f.name === 'bridge-' + isoToday() + '.jsonl')) sel.value = 'bridge-' + isoToday() + '.jsonl';
+    loadLog();
+  } catch (e) { toast(e.message, true) }
+}
+async function loadLog() {
+  const name = $('l-file').value; if (!name) return;
+  try {
+    const r = await api('/api/log?name=' + encodeURIComponent(name) + '&tail=' + encodeURIComponent($('l-tail').value || 300));
+    $('l-out').textContent = `（${r.name} · 共 ${r.total} 行，显示最后 ${r.lines.length} 行）\n\n` + r.lines.join('\n');
+    $('l-out').scrollTop = $('l-out').scrollHeight;
+  } catch (e) { $('l-out').textContent = '读不到：' + e.message }
+}
+$('l-load').onclick = loadLog;
+$('l-file').onchange = loadLog;
+setInterval(() => { if ($('page-logs').classList.contains('sel') && $('l-auto').checked) { loadLogFiles() } }, 2000);
+
+// ------------------------------------------------------------------ 启动
+$('c-date').value = isoToday();
+loadStatus();
+setInterval(loadStatus, 3000);
+setInterval(() => { if ($('page-chat').classList.contains('sel')) loadChat() }, 10000);
+</script>
+</body>
+</html>
